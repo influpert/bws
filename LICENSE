@@ -1,21 +1,22 @@
-MIT License
-
 Copyright (c) 2026 Influpert
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This repository contains a GitHub Action ("the Action") that installs and
+invokes the Bitwarden Secrets Manager command-line tool ("bws"). The Action
+does not include or redistribute bws; it downloads the official bws release
+from Bitwarden at runtime.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+The Action is provided for use solely in connection with the Bitwarden Secrets
+Manager CLI and is subject to the Bitwarden Software Development Kit License
+Agreement, Version 1 (17 March 2023), available at:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+    https://github.com/bitwarden/sdk-sm/blob/main/LICENSE
+
+No rights broader than those granted by that Agreement are conferred by this
+repository. To the extent this repository's own source (the Action definition
+and the scripts in bin/) is separable from bws, it is made available under the
+same terms and no more permissively.
+
+THE ACTION IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM,
+DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
+ACTION OR THE USE OR OTHER DEALINGS IN THE ACTION.

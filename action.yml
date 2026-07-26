@@ -1,0 +1,43 @@
+name: "Load Bitwarden secrets by name"
+description: >-
+  Install the Bitwarden Secrets Manager CLI (bws) and load named secrets from a
+  project into $GITHUB_ENV (masked). The action's major version tracks the bws
+  CLI major version (derived from the action ref): @v1 installs the latest bws
+  1.x, @v2 the latest bws 2.x, and so on. There is no version input.
+author: "influpert"
+branding:
+  icon: "lock"
+  color: "blue"
+
+inputs:
+  access-token:
+    description: "Bitwarden Secrets Manager access token (the only real secret)."
+    required: true
+  project-id:
+    description: "Bitwarden project id to resolve secret names (keys) within."
+    required: true
+  names:
+    description: >-
+      Newline-separated secret keys to load. Each key becomes an environment
+      variable of the same name, masked, available to later steps in the job.
+    required: true
+  github-token:
+    description: >-
+      Token for the GitHub API call that resolves the latest bws release
+      (avoids unauthenticated rate limits). Defaults to the workflow token.
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      env:
+        BWS_ACCESS_TOKEN: ${{ inputs.access-token }}
+        INPUT_PROJECT_ID: ${{ inputs.project-id }}
+        INPUT_NAMES: ${{ inputs.names }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        # The ref the action was called with (e.g. "v2") — the dynamic source
+        # of the bws major to install. See bin/load.sh.
+        ACTION_REF: ${{ github.action_ref }}
+      run: "${GITHUB_ACTION_PATH}/bin/load.sh"

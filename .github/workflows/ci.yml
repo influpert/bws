@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # shellcheck is preinstalled on ubuntu-latest.
+      - name: shellcheck
+        run: shellcheck bin/*.sh
+
+      - name: actionlint
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+
+  # Integration: exercises the real action end-to-end. Skips automatically when
+  # BWS_ACCESS_TOKEN / BWS_PROJECT_ID / BWS_TEST_SECRET_KEY are not configured
+  # (forks, PRs from forks), so it only runs where the maintainer has wired up
+  # a Bitwarden project with a known test secret.
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gate on configured test credentials
+        id: gate
+        env:
+          TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+          PROJECT: ${{ vars.BWS_PROJECT_ID }}
+          KEY: ${{ vars.BWS_TEST_SECRET_KEY }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$PROJECT" ] && [ -n "$KEY" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "integration test skipped (no BWS_ACCESS_TOKEN/BWS_PROJECT_ID/BWS_TEST_SECRET_KEY)"
+          fi
+
+      - name: Load the test secret via the action
+        if: steps.gate.outputs.run == 'true'
+        uses: ./
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          project-id: ${{ vars.BWS_PROJECT_ID }}
+          names: ${{ vars.BWS_TEST_SECRET_KEY }}
+
+      - name: Assert the secret was exported (value stays masked)
+        if: steps.gate.outputs.run == 'true'
+        env:
+          KEY: ${{ vars.BWS_TEST_SECRET_KEY }}
+        run: |
+          # The action exports ${KEY} into the env; assert it is non-empty
+          # without ever echoing the value.
+          val="$(printenv "$KEY" || true)"
+          [ -n "$val" ] || { echo "::error::${KEY} was not exported by the action"; exit 1; }
+          echo "ok: ${KEY} is set"

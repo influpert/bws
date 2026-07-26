@@ -1,0 +1,36 @@
+name: Maintain major tags
+
+# Automates the action's major tags (v1, v2, …). The action's major tracks the
+# bws CLI major (derived from the ref at runtime), so tags are bare moving
+# majors — there are no semver release tags to manage.
+#
+#   - On push to main / weekly / manual dispatch: maintain the CURRENT and
+#     PREVIOUS bws major (latest upstream major and the one before it, floored at
+#     v1) — ensure each vN tag exists and points at main. New majors get a tag
+#     automatically when bws bumps; older majors are left frozen.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write # push/move tags
+
+concurrency:
+  group: maintain-tags
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history + all tags
+
+      - name: Maintain major tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bin/maintain-tags.sh
