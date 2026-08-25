@@ -11,7 +11,7 @@
 set -euo pipefail
 
 : "${BWS_ACCESS_TOKEN:?access-token is required}"
-: "${INPUT_PROJECT_ID:?project-id is required}"
+: "${INPUT_PROJECT_ID:=}"
 : "${INPUT_NAMES:?names is required}"
 
 # Derive the bws major from the action ref (e.g. "v2" -> 2, "v2.1.0" -> 2).
@@ -69,7 +69,9 @@ export PATH="${tmp}/bin:${PATH}"       # ...and for this step
 
 # --- resolve each requested key by name and export it, masked ---
 secrets_json="${tmp}/secrets.json"
-bws secret list "$INPUT_PROJECT_ID" --output json > "$secrets_json"
+list_args=()
+[ -n "$INPUT_PROJECT_ID" ] && list_args=("$INPUT_PROJECT_ID")
+bws secret list "${list_args[@]}" --output json > "$secrets_json"
 
 while IFS= read -r raw; do
   name="$(printf '%s' "$raw" | tr -d '[:space:]')"
@@ -77,7 +79,7 @@ while IFS= read -r raw; do
 
   value="$(jq -r --arg k "$name" '.[] | select(.key == $k) | .value' "$secrets_json")"
   if [ -z "$value" ] || [ "$value" = "null" ]; then
-    echo "::error::Bitwarden secret '${name}' not found in project ${INPUT_PROJECT_ID}"
+    echo "::error::Bitwarden secret '${name}' not found${INPUT_PROJECT_ID:+ in project ${INPUT_PROJECT_ID}}"
     exit 1
   fi
 

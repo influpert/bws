@@ -52,7 +52,7 @@ fails the step.
 | Input | Required | Description |
 | --- | --- | --- |
 | `access-token` | yes | Bitwarden Secrets Manager access token. Keep it as the sole GitHub Actions secret. |
-| `project-id` | yes | Bitwarden project id to resolve names within (not sensitive — use a repo/org **variable**). |
+| `project-id` | no | Bitwarden project id to resolve names within (not sensitive — use a repo/org **variable**). If omitted, names are resolved across all projects the access token can see. |
 | `names` | yes | Newline-separated secret keys to load. |
 | `github-token` | no | Token for the release-lookup API call (defaults to `${{ github.token }}`). |
 
