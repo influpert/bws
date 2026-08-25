@@ -14,8 +14,10 @@ inputs:
     description: "Bitwarden Secrets Manager access token (the only real secret)."
     required: true
   project-id:
-    description: "Bitwarden project id to resolve secret names (keys) within."
-    required: true
+    description: >-
+      Bitwarden project id to resolve secret names (keys) within. If omitted,
+      secret names are resolved across all projects the access token can see.
+    required: false
   names:
     description: >-
       Newline-separated secret keys to load. Each key becomes an environment
