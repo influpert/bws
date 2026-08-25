@@ -47,6 +47,28 @@ Each name in `names` must match a secret **key** in the Bitwarden project; the
 action exports an environment variable of the same name (masked). A missing key
 fails the step.
 
+Omit `project-id` to resolve names across **every project the access token can
+see**, instead of one:
+
+```yaml
+- name: Load secrets from Bitwarden Secrets Manager
+  uses: influpert/bws@v2
+  with:
+    access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+    names: |
+      CLOUDFLARE_API_TOKEN
+      NPM_TOKEN
+```
+
+### Name collisions
+
+If a requested name matches more than one secret — only possible without
+`project-id`, since a name is unique within a single Bitwarden project — the
+step fails with `::error::` naming the ambiguous key. It never prints which
+projects or values collided, only the key name itself. To resolve one: rename
+one of the underlying secrets in Bitwarden, or add `project-id` back to that
+step to scope the lookup to a single project.
+
 ## Inputs
 
 | Input | Required | Description |

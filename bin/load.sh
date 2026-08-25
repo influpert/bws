@@ -69,6 +69,10 @@ export PATH="${tmp}/bin:${PATH}"       # ...and for this step
 
 # --- resolve each requested key by name and export it, masked ---
 secrets_json="${tmp}/secrets.json"
+# Deleted on every exit path, including the collision guard's own `exit 1`
+# below — that path is exactly the one most likely to leave a plaintext,
+# possibly-multi-project dump sitting on disk if cleanup only ran on success.
+trap 'rm -f "$secrets_json"' EXIT
 list_args=()
 [ -n "$INPUT_PROJECT_ID" ] && list_args=("$INPUT_PROJECT_ID")
 bws secret list "${list_args[@]}" --output json > "$secrets_json"
@@ -77,9 +81,25 @@ while IFS= read -r raw; do
   name="$(printf '%s' "$raw" | tr -d '[:space:]')"
   [ -n "$name" ] || continue
 
+  # Count first, rather than extracting directly: with no project-id, a name
+  # can legitimately match more than one secret across every project the
+  # access token can see. `select(.key == $k) | .value` on its own would
+  # return every match newline-joined into one non-empty string, which the
+  # emptiness check below can't catch — silently exporting a concatenation
+  # of unrelated secret values as if it were one. Refuse instead.
+  count="$(jq -r --arg k "$name" '[.[] | select(.key == $k)] | length' "$secrets_json")"
+  if [ "$count" -gt 1 ]; then
+    echo "::error::Bitwarden secret '${name}' is ambiguous — it matches ${count} secrets${INPUT_PROJECT_ID:+ in project ${INPUT_PROJECT_ID}}. Rename one of the underlying secrets in Bitwarden, or add project-id to scope this step to a single project."
+    exit 1
+  fi
+
   value="$(jq -r --arg k "$name" '.[] | select(.key == $k) | .value' "$secrets_json")"
   if [ -z "$value" ] || [ "$value" = "null" ]; then
-    echo "::error::Bitwarden secret '${name}' not found${INPUT_PROJECT_ID:+ in project ${INPUT_PROJECT_ID}}"
+    if [ -n "$INPUT_PROJECT_ID" ]; then
+      echo "::error::Bitwarden secret '${name}' not found in project ${INPUT_PROJECT_ID}"
+    else
+      echo "::error::Bitwarden secret '${name}' not found in any accessible project"
+    fi
     exit 1
   fi
 
