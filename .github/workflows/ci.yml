@@ -42,7 +42,7 @@ jobs:
             echo "integration test skipped (no BWS_ACCESS_TOKEN/BWS_PROJECT_ID/BWS_TEST_SECRET_KEY)"
           fi
 
-      - name: Load the test secret via the action
+      - name: Load the test secret via the action (project-id set)
         if: steps.gate.outputs.run == 'true'
         uses: ./
         with:
@@ -60,3 +60,24 @@ jobs:
           val="$(printenv "$KEY" || true)"
           [ -n "$val" ] || { echo "::error::${KEY} was not exported by the action"; exit 1; }
           echo "ok: ${KEY} is set"
+
+      # Same secret, resolved with project-id omitted — proves the unscoped
+      # path (searching every project the access token can see) also works.
+      # Does NOT exercise the collision-guard's error path: that needs a
+      # second, deliberately same-named secret in another visible project,
+      # which isn't configured here.
+      - name: Load the test secret via the action (project-id omitted)
+        if: steps.gate.outputs.run == 'true'
+        uses: ./
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          names: ${{ vars.BWS_TEST_SECRET_KEY }}
+
+      - name: Assert the secret was exported unscoped (value stays masked)
+        if: steps.gate.outputs.run == 'true'
+        env:
+          KEY: ${{ vars.BWS_TEST_SECRET_KEY }}
+        run: |
+          val="$(printenv "$KEY" || true)"
+          [ -n "$val" ] || { echo "::error::${KEY} was not exported by the unscoped call"; exit 1; }
+          echo "ok: ${KEY} is set (unscoped)"
