@@ -55,6 +55,13 @@ case "${os}-${arch}" in
   Linux-aarch64)       target="aarch64-unknown-linux-gnu" ;;
   Darwin-x86_64)       target="x86_64-apple-darwin" ;;
   Darwin-arm64)        target="aarch64-apple-darwin" ;;
+  # The windows-latest/windows-11-arm runners execute this script under Git
+  # for Windows' bundled MSYS2 bash, where `uname -s` reports the shell
+  # environment (MINGW64_NT-*, MSYS_NT-*, or CYGWIN_NT-* depending on which
+  # git-bash variant is on PATH), not "Windows" — hence matching all three
+  # prefixes rather than a single exact string.
+  MINGW*-x86_64|MSYS*-x86_64|CYGWIN*-x86_64)    target="x86_64-pc-windows-msvc" ;;
+  MINGW*-aarch64|MSYS*-aarch64|CYGWIN*-aarch64) target="aarch64-pc-windows-msvc" ;;
   *) echo "::error::unsupported runner ${os}-${arch} for bws"; exit 1 ;;
 esac
 
@@ -63,7 +70,10 @@ url="https://github.com/bitwarden/sdk-sm/releases/download/bws-v${ver}/bws-${tar
 echo "Installing bws ${ver} (${target})"
 curl -fsSL -o "${tmp}/bws.zip" "$url"
 unzip -o -q "${tmp}/bws.zip" -d "${tmp}/bin"
-chmod +x "${tmp}/bin/bws"
+# The Windows archive extracts to bws.exe, not bws — nothing to chmod there
+# (NTFS has no execute bit), and MSYS bash's own PATH resolution already
+# finds bws.exe for a bare `bws` invocation, same as native Windows PATHEXT.
+[ -f "${tmp}/bin/bws" ] && chmod +x "${tmp}/bin/bws"
 echo "${tmp}/bin" >> "$GITHUB_PATH"   # on PATH for later steps
 export PATH="${tmp}/bin:${PATH}"       # ...and for this step
 
@@ -75,7 +85,12 @@ secrets_json="${tmp}/secrets.json"
 trap 'rm -f "$secrets_json"' EXIT
 list_args=()
 [ -n "$INPUT_PROJECT_ID" ] && list_args=("$INPUT_PROJECT_ID")
-bws secret list "${list_args[@]}" --output json > "$secrets_json"
+# macOS runners default to bash 3.2 (Apple ships nothing newer over GPLv3),
+# where "${list_args[@]}" on a zero-element array is a hard error under
+# `set -u` — fixed in bash 4.4, not before. `${list_args[@]+"${list_args[@]}"}`
+# is the portable workaround: it only expands the array if set, and testing
+# for that doesn't trigger the same dereference bug.
+bws secret list "${list_args[@]+"${list_args[@]}"}" --output json > "$secrets_json"
 
 while IFS= read -r raw; do
   name="$(printf '%s' "$raw" | tr -d '[:space:]')"
