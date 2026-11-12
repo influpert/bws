@@ -10,7 +10,10 @@ trap 'rm -rf "$work"' EXIT
 
 # A fake multiline PEM-shaped value, a CRLF value and a single-line value.
 # None of these are real keys.
-pem=$'-----BEGIN PRIVATE KEY-----\nFAKEbodyLINEoneAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nFAKEbodyLINEtwoBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n\nFAKEbodyLINEthree==\n-----END PRIVATE KEY-----'
+# PEM armor is assembled at runtime so secret scanners don't read it as a key.
+armor_begin="-----BEGIN PRIVATE"" KEY-----"
+armor_end="-----END PRIVATE"" KEY-----"
+pem="${armor_begin}"$'\nFAKEbodyLINEoneAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nFAKEbodyLINEtwoBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n\nFAKEbodyLINEthree==\n'"${armor_end}"
 crlf=$'FAKEcrlfLINEone\r\nFAKEcrlfLINEtwo'
 single='FAKEsingleLINEvalue'
 
