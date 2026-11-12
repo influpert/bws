@@ -118,7 +118,17 @@ while IFS= read -r raw; do
     exit 1
   fi
 
-  printf '::add-mask::%s\n' "$value"
+  # One ::add-mask:: per line. A workflow command ends at the first newline,
+  # so masking a multiline value (a PEM key, say) in one command registers
+  # only its first line and prints every later line to the log in plain
+  # text, where it also reappears unmasked in each later step's env listing.
+  # CR is stripped so a CRLF value still matches its masked lines; blank
+  # lines are skipped because there is nothing in them to hide.
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    [[ "$line" =~ [^[:space:]] ]] || continue
+    printf '::add-mask::%s\n' "$line"
+  done <<< "$value"
   # Heredoc form so multiline secret values survive intact.
   {
     printf '%s<<__BWS_EOF__\n' "$name"
