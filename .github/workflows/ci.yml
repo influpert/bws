@@ -12,7 +12,11 @@ jobs:
 
       # shellcheck is preinstalled on ubuntu-latest.
       - name: shellcheck
-        run: shellcheck bin/*.sh
+        run: shellcheck bin/*.sh test/*.sh
+
+      # Offline: stubs curl/unzip/bws, so it runs everywhere, forks included.
+      - name: Multiline values are masked line by line
+        run: test/masking.sh
 
       - name: actionlint
         run: |

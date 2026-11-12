@@ -88,7 +88,8 @@ matching `bws` release). Windows runners are not supported.
 - The only GitHub Actions **secret** you configure is `access-token`
   (`BWS_ACCESS_TOKEN`); everything else is pulled from Bitwarden at run time.
 - Every loaded value is registered with `::add-mask::` before it reaches the
-  log or `$GITHUB_ENV`.
+  log or `$GITHUB_ENV`. A multiline value (a PEM key, say) is masked line by
+  line, because one `::add-mask::` command ends at the first newline.
 - Pin this action by the `v2` tag (which the maintainer moves) or by commit SHA;
   it becomes part of your deploy supply chain.
 
